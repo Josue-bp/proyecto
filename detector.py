@@ -1,79 +1,61 @@
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
-import threading
+import cv2
+from datetime import datetime, timedelta
 import os
-import time
-from detector import detectar_rostros
 
-# Función para correr detección sin bloquear la interfaz
-def iniciar_deteccion():
-    estado.config(text="Estado: Detectando...", fg="green")
-    hilo = threading.Thread(target=detectar_rostros)
-    hilo.start()
+# Obtener la ruta absoluta del directorio donde está este archivo
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-def abrir_capturas():
-    os.startfile("capturas")
+# Ruta completa a la carpeta "capturas"
+capturas_dir = os.path.join(base_dir, "capturas")
 
-def abrir_registro():
-    os.startfile("registro_detecciones.txt")
+# Crear la carpeta si no existe
+if not os.path.exists(capturas_dir):
+    os.makedirs(capturas_dir)
 
-def confirmar_salida():
-    if messagebox.askokcancel("Salir", "¿Deseas cerrar la aplicación?"):
-        ventana.quit()
+# Ruta completa para el registro de detecciones
+registro_path = os.path.join(base_dir, "registro_detecciones.txt")
 
-def actualizar_hora():
-    hora_actual = time.strftime("%H:%M:%S")
-    fecha_actual = time.strftime("%d/%m/%Y")
-    reloj.config(text=f"{fecha_actual} {hora_actual}")
-    ventana.after(1000, actualizar_hora)
+# Configuración del detector y cámara
+detector = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+cam = cv2.VideoCapture(0)
 
-# Cargar imágenes (se redimensionan)
-def cargar_icono(ruta, tamaño=(24, 24)):
-    imagen = Image.open(ruta)
-    imagen = imagen.resize(tamaño, Image.ANTIALIAS)
-    return ImageTk.PhotoImage(imagen)
+# Variables para control de tiempo y conteo
+ultimo_guardado = datetime.now() - timedelta(seconds=5)
+contador_detecciones = 0
 
-# --- Ventana principal ---
-ventana = tk.Tk()
-ventana.title("Proyecto: Detección de Rostros")
-ventana.geometry("320x360")
+while True:
+    ret, frame = cam.read()
+    if not ret:
+        break
 
-# Cargar íconos
-icono_camara = cargar_icono("iconos/camara-de-seguridad.png")
-icono_detective = cargar_icono("iconos/detective.png")
-icono_justicia = cargar_icono("iconos/palacio-de-justicia.png")
+    gris = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    rostros = detector.detectMultiScale(gris, 1.3, 5)
 
-# Título
-titulo = tk.Label(ventana, text="Detección de Rostros", font=("Arial", 14))
-titulo.pack(pady=10)
+    for (x, y, w, h) in rostros:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-# Estado
-estado = tk.Label(ventana, text="Estado: Inactivo", fg="red", font=("Arial", 10))
-estado.pack()
+    fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cv2.putText(frame, fecha_hora, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(frame, f"Detecciones: {contador_detecciones}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
-# Botones con íconos
-btn_iniciar = tk.Button(ventana, text="  Iniciar Cámara", image=icono_camara, compound="left",
-                        command=iniciar_deteccion, width=200, anchor="w")
-btn_iniciar.pack(pady=10)
+    # Guardar captura si ha pasado suficiente tiempo desde la última
+    if len(rostros) > 0 and datetime.now() - ultimo_guardado > timedelta(seconds=5):
+        fecha_hora_archivo = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        nombre_archivo = f"captura_{fecha_hora_archivo}.jpg"
+        ruta_guardado = os.path.join(capturas_dir, nombre_archivo)
 
-btn_capturas = tk.Button(ventana, text="  Ver Capturas", image=icono_detective, compound="left",
-                         command=abrir_capturas, width=200, anchor="w")
-btn_capturas.pack(pady=5)
+        cv2.imwrite(ruta_guardado, frame)
+        print(f"Imagen guardada: {ruta_guardado}")
+        contador_detecciones += 1
+        ultimo_guardado = datetime.now()
 
-btn_registro = tk.Button(ventana, text="  Ver Registro", image=icono_justicia, compound="left",
-                         command=abrir_registro, width=200, anchor="w")
-btn_registro.pack(pady=5)
+        with open(registro_path, "a") as f:
+            f.write(f"{fecha_hora} - Detección: {len(rostros)} rostro(s) - Imagen: {ruta_guardado}\n")
 
-btn_salir = tk.Button(ventana, text="Salir", command=confirmar_salida, width=20)
-btn_salir.pack(pady=10)
+    cv2.imshow('Detección de Rostros', frame)
 
-# Reloj
-reloj = tk.Label(ventana, text="", font=("Arial", 9))
-reloj.pack()
+    if cv2.waitKey(1) == 27:  # ESC
+        break
 
-# Iniciar reloj
-actualizar_hora()
-
-# Iniciar interfaz
-ventana.mainloop()
+cam.release()
+cv2.destroyAllWindows()
