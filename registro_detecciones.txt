@@ -23,3 +23,7 @@
 2025-05-18 15:49:48 - Detección: 1 rostro(s) - Imagen: capturas/captura_2025-05-18_15-49-48.jpg
 2025-05-18 15:49:48 - Detección: 1 rostro(s) - Imagen: capturas/captura_2025-05-18_15-49-48.jpg
 2025-05-18 15:49:48 - Detección: 1 rostro(s) - Imagen: capturas/captura_2025-05-18_15-49-48.jpg
+2025-05-19 18:05:36 - Detección: 1 rostro(s) - Imagen: C:\Users\user\Desktop\Detector\capturas\captura_2025-05-19_18-05-36.jpg
+2025-05-19 18:05:45 - Detección: 2 rostro(s) - Imagen: C:\Users\user\Desktop\Detector\capturas\captura_2025-05-19_18-05-45.jpg
+2025-05-19 18:06:00 - Detección: 1 rostro(s) - Imagen: C:\Users\user\Desktop\Detector\capturas\captura_2025-05-19_18-06-00.jpg
+2025-05-19 18:15:34 - Detección: 1 rostro(s) - Imagen: C:\Users\user\Desktop\Detector\capturas\captura_2025-05-19_18-15-34.jpg
