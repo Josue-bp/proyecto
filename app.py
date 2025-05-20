@@ -3,23 +3,27 @@ import subprocess
 import os
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
-    QPushButton, QStatusBar, QLineEdit
+    QPushButton, QStatusBar, QLineEdit, QMessageBox
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QIcon, QMovie
+from PyQt6.QtCore import Qt, QSize
 
-# Base de usuarios simple (puedes cambiar esto por una DB después)
 USUARIOS = {
     "admin": "1234",
-    "josue": "clave"
+    "josue": "clave",
+    "flavio": "12345"
 }
 
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Inicio de Sesión")
-        self.setGeometry(650, 350, 350, 250)
+        self.setGeometry(650, 350, 350, 300)
+        self.setStyleSheet("background-color: #2E3440; color: white; font-family: Arial;")
 
         layout = QVBoxLayout()
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(15)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.label = QLabel("Inicia sesión para continuar")
@@ -50,11 +54,12 @@ class LoginWindow(QWidget):
                 font-family: Arial;
             }
             QLineEdit {
-                padding: 8px;
+                padding: 10px;
                 font-size: 14px;
                 border-radius: 6px;
                 background-color: #ECEFF4;
                 color: black;
+                border: 2px solid #81A1C1;
             }
             QPushButton {
                 background-color: #5E81AC;
@@ -83,86 +88,140 @@ class LoginWindow(QWidget):
             self.ventana_principal = MainWindow()
             self.ventana_principal.show()
         else:
-            self.status.showMessage("Usuario o contraseña incorrectos")
+            QMessageBox.warning(self, "Error de Autenticación", "Usuario o contraseña incorrectos")
 
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Proyecto: Detector Facial")
-        self.setGeometry(600, 300, 400, 300)
+        self.setGeometry(600, 300, 460, 460)
+
+        # GIF de fondo
+        self.fondo_gif = QLabel(self)
+        self.fondo_gif.setGeometry(0, 0, self.width(), self.height())
+        self.fondo_gif.setScaledContents(True)
+        movie = QMovie("iconos/carro.gif")
+        self.fondo_gif.setMovie(movie)
+        movie.start()
 
         layout = QVBoxLayout()
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(25)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.label = QLabel("Bienvenido a la Detección de Rostros")
-        self.label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: 700;
+            color: #ECEFF4;
+            text-shadow: 2px 2px 4px #2E3440;
+        """)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
 
-        self.button = QPushButton("Iniciar Detección")
-        self.button.clicked.connect(self.ejecutar_detector)
-        layout.addWidget(self.button)
+        if os.path.exists("logo.png"):
+            imagen = QLabel()
+            imagen.setPixmap(QPixmap("logo.png").scaled(120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            imagen.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(imagen)
 
-        self.ver_registro = QPushButton("Ver Registro de Detecciones")
-        self.ver_registro.clicked.connect(self.abrir_registro)
-        layout.addWidget(self.ver_registro)
+        botones = [
+            ("Iniciar Detección", "iconos/huella-dactilar.png", self.ejecutar_detector),
+            ("Ver Registro de Detecciones", "iconos/lupa.png", self.abrir_registro),
+            ("Abrir Carpeta de Capturas", "iconos/sospechar.png", self.abrir_capturas),
+            ("Salir", "iconos/linea-policial.png", self.salir_app)
+        ]
 
-        self.abrir_carpeta = QPushButton("Abrir Carpeta de Capturas")
-        self.abrir_carpeta.clicked.connect(self.abrir_capturas)
-        layout.addWidget(self.abrir_carpeta)
+        for texto, ruta_icono, func in botones:
+            btn = QPushButton(texto)
+            btn.setFixedHeight(50)
+            if os.path.exists(ruta_icono):
+                btn.setIcon(QIcon(ruta_icono))
+            btn.setIconSize(QSize(28, 28))
+            btn.clicked.connect(func)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #5E81AC;
+                    color: white;
+                    font-size: 18px;
+                    font-weight: 600;
+                    border-radius: 20px;
+                    box-shadow: 0 5px 10px rgba(0,0,0,0.35);
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    qproperty-iconSize: 28px 28px;
+                }
+                QPushButton:hover {
+                    background-color: #81A1C1;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.45);
+                }
+                QPushButton:pressed {
+                    background-color: #4C6996;
+                }
+            """)
+            btn.setStyleSheet(btn.styleSheet() + """
+                QPushButton {
+                    text-align: center;
+                }
+            """)
+            layout.addWidget(btn)
 
         self.status = QStatusBar()
         self.status.showMessage("Listo para iniciar detección")
         layout.addWidget(self.status)
 
+        self.setLayout(layout)
+
+        # Poner el GIF detrás de los widgets
+        self.fondo_gif.lower()
+
         self.setStyleSheet("""
             QWidget {
-                background-color: #2E3440;
-                color: white;
-                font-family: Arial;
+                background: transparent;
+                color: #D8DEE9;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-            QPushButton {
-                background-color: #5E81AC;
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-                border-radius: 8px;
-                margin-top: 10px;
-            }
-            QPushButton:hover {
-                background-color: #81A1C1;
-            }
-            QPushButton:pressed {
-                background-color: #4C6996;
+            QStatusBar {
+                background: transparent;
+                color: #D8DEE9;
+                font-style: italic;
             }
         """)
 
-        self.setLayout(layout)
+    def resizeEvent(self, event):
+        self.fondo_gif.setGeometry(0, 0, self.width(), self.height())
+        return super().resizeEvent(event)
 
     def ejecutar_detector(self):
-        self.status.showMessage("Ejecutando detector...")
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        detector_path = os.path.join(script_dir, "detector.py")
-
-        if os.path.exists(detector_path):
-            subprocess.Popen([sys.executable, detector_path])
+        try:
+            self.status.showMessage("Ejecutando detector...")
+            subprocess.Popen([sys.executable, "detector.py"])
             self.status.showMessage("Detector iniciado")
-        else:
-            self.status.showMessage("No se encontró detector.py")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo iniciar el detector:\n{e}")
 
     def abrir_registro(self):
-        registro_path = os.path.join(os.path.dirname(__file__), "registro_detecciones.txt")
-        if os.path.exists(registro_path):
-            subprocess.Popen(["notepad.exe", registro_path])
+        if os.path.exists("registro_detecciones.txt"):
+            subprocess.Popen(["notepad.exe", "registro_detecciones.txt"])
         else:
-            self.status.showMessage("No hay registro aún.")
+            QMessageBox.information(self, "Registro no encontrado", "No hay registro aún.")
 
     def abrir_capturas(self):
-        capturas_path = os.path.join(os.path.dirname(__file__), "capturas")
-        if not os.path.exists(capturas_path):
-            os.makedirs(capturas_path)
-        os.startfile(capturas_path)
+        try:
+            if not os.path.exists("capturas"):
+                os.makedirs("capturas")
+            os.startfile("capturas")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo abrir la carpeta:\n{e}")
+
+    def salir_app(self):
+        respuesta = QMessageBox.question(
+            self, "Salir", "¿Seguro que quieres salir?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if respuesta == QMessageBox.StandardButton.Yes:
+            QApplication.quit()
 
 
 if __name__ == "__main__":
